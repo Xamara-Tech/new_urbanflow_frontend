@@ -1,197 +1,182 @@
-'use client'
+"use client"
 
-import { useState, useEffect } from 'react'
-import { Navigation } from '@/components/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { Search, FileText, Download, ExternalLink, Calendar, Tag, AlertCircle, CheckCircle, Clock } from 'lucide-react'
-import { apiClient } from '@/lib/api'
+import type React from "react"
 
-interface Regulation {
-  id: string
-  title: string
-  description: string
-  category: string
-  status: 'active' | 'pending' | 'archived'
-  effective_date: string
-  last_updated: string
-  document_url?: string
-  sections: {
-    title: string
-    content: string
-  }[]
-}
+import { useState, useEffect } from "react"
+import { Navigation } from "@/components/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { User, Mail, Phone, MapPin, Calendar, Shield, Lock, Camera, Save, Edit, CheckCircle } from "lucide-react"
+import { apiClient } from "@/lib/api"
 
-export default function RegulationsPage() {
-  const [regulations, setRegulations] = useState<Regulation[]>([])
+export default function ProfilePage() {
+  const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [saving, setSaving] = useState(false)
+  const [editMode, setEditMode] = useState(false)
+  const [formData, setFormData] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    address: "",
+    bio: "",
+    date_of_birth: "",
+    occupation: "",
+  })
+  const [notifications, setNotifications] = useState({
+    email_notifications: true,
+    sms_notifications: false,
+    push_notifications: true,
+    project_updates: true,
+    feedback_alerts: true,
+    marketing_emails: false,
+  })
+  const [security, setSecurity] = useState({
+    two_factor_enabled: false,
+    login_alerts: true,
+    session_timeout: "30",
+  })
 
   useEffect(() => {
-    fetchRegulations()
+    fetchUserProfile()
   }, [])
 
-  const fetchRegulations = async () => {
+  const fetchUserProfile = async () => {
     try {
-      const response = await apiClient.getRegulations()
+      const response = await apiClient.getProfile()
       if (response.data) {
-        setRegulations(response.data)
+        setUser(response.data)
+        setFormData({
+          first_name: response.data.first_name || "",
+          last_name: response.data.last_name || "",
+          email: response.data.email || "",
+          phone: response.data.phone || "",
+          address: response.data.address || "",
+          bio: response.data.bio || "",
+          date_of_birth: response.data.date_of_birth || "",
+          occupation: response.data.occupation || "",
+        })
+        if (response.data.preferences) {
+          setNotifications(response.data.preferences.notifications || notifications)
+          setSecurity(response.data.preferences.security || security)
+        }
+      } else {
+        // Mock user data
+        const mockUser = {
+          id: "1",
+          first_name: "John",
+          last_name: "Doe",
+          email: "john.doe@email.com",
+          phone: "+254 700 123 456",
+          address: "Kilimani, Nairobi",
+          bio: "Urban development enthusiast and community advocate",
+          date_of_birth: "1985-06-15",
+          occupation: "Software Engineer",
+          avatar: null,
+          verification_status: "verified",
+          member_since: "2024-01-15",
+          projects_participated: 12,
+          feedback_given: 28,
+        }
+        setUser(mockUser)
+        setFormData({
+          first_name: mockUser.first_name,
+          last_name: mockUser.last_name,
+          email: mockUser.email,
+          phone: mockUser.phone,
+          address: mockUser.address,
+          bio: mockUser.bio,
+          date_of_birth: mockUser.date_of_birth,
+          occupation: mockUser.occupation,
+        })
       }
     } catch (error) {
-      // Mock data fallback
-      const mockRegulations: Regulation[] = [
-        {
-          id: '1',
-          title: 'Urban Development Standards',
-          description: 'Comprehensive guidelines for urban development projects including zoning, building codes, and environmental requirements.',
-          category: 'Development',
-          status: 'active',
-          effective_date: '2024-01-01',
-          last_updated: '2024-01-15',
-          document_url: '/documents/urban-development-standards.pdf',
-          sections: [
-            {
-              title: 'Zoning Requirements',
-              content: 'All urban development projects must comply with local zoning regulations. Mixed-use developments are encouraged in designated areas to promote sustainable urban growth.'
-            },
-            {
-              title: 'Building Height Restrictions',
-              content: 'Maximum building heights are determined by zone classification. Residential zones: 4 stories, Commercial zones: 8 stories, Mixed-use zones: 12 stories.'
-            },
-            {
-              title: 'Environmental Impact',
-              content: 'All projects must undergo environmental impact assessment. Green building standards are mandatory for projects over 10,000 sq ft.'
-            }
-          ]
-        },
-        {
-          id: '2',
-          title: 'Community Engagement Protocol',
-          description: 'Requirements for public consultation and community involvement in urban development projects.',
-          category: 'Community',
-          status: 'active',
-          effective_date: '2023-06-01',
-          last_updated: '2024-02-01',
-          sections: [
-            {
-              title: 'Public Notice Requirements',
-              content: 'All development projects must provide 30-day public notice before commencement. Notice must be posted in local newspapers and community boards.'
-            },
-            {
-              title: 'Community Meetings',
-              content: 'Mandatory community meetings must be held for projects affecting more than 50 residents. Meetings must be accessible and provide translation services.'
-            },
-            {
-              title: 'Feedback Integration',
-              content: 'Developer must demonstrate how community feedback has been incorporated into project design and implementation.'
-            }
-          ]
-        },
-        {
-          id: '3',
-          title: 'Affordable Housing Requirements',
-          description: 'Mandates for including affordable housing units in new residential developments.',
-          category: 'Housing',
-          status: 'active',
-          effective_date: '2023-09-01',
-          last_updated: '2023-12-15',
-          sections: [
-            {
-              title: 'Inclusion Requirements',
-              content: 'New residential developments with 20+ units must include minimum 15% affordable housing units or pay in-lieu fees.'
-            },
-            {
-              title: 'Income Eligibility',
-              content: 'Affordable units must be available to households earning 80% or less of Area Median Income (AMI).'
-            },
-            {
-              title: 'Long-term Affordability',
-              content: 'Affordable units must remain affordable for minimum 30 years through deed restrictions or other legal mechanisms.'
-            }
-          ]
-        },
-        {
-          id: '4',
-          title: 'Infrastructure Impact Fees',
-          description: 'Fee structure for development projects to fund necessary infrastructure improvements.',
-          category: 'Infrastructure',
-          status: 'pending',
-          effective_date: '2024-07-01',
-          last_updated: '2024-01-30',
-          sections: [
-            {
-              title: 'Fee Calculation',
-              content: 'Impact fees calculated based on project size, type, and estimated infrastructure burden. Fees range from $2,000-$15,000 per unit.'
-            },
-            {
-              title: 'Eligible Improvements',
-              content: 'Fees fund transportation, water/sewer, parks, and public safety infrastructure improvements directly related to development impact.'
-            },
-            {
-              title: 'Payment Schedule',
-              content: 'Fees due at building permit issuance. Payment plans available for projects with 50+ units.'
-            }
-          ]
-        }
-      ]
-      setRegulations(mockRegulations)
+      console.error("Error fetching profile:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const categories = ['all', ...Array.from(new Set(regulations.map(r => r.category)))]
-
-  const filteredRegulations = regulations.filter(regulation => {
-    const matchesSearch = regulation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         regulation.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === 'all' || regulation.category === selectedCategory
-    return matchesSearch && matchesCategory
-  })
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return <CheckCircle className="w-4 h-4 text-green-600" />
-      case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-600" />
-      case 'archived':
-        return <AlertCircle className="w-4 h-4 text-gray-600" />
-      default:
-        return null
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }))
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-      case 'archived':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
-      default:
-        return 'bg-gray-100 text-gray-800'
+  const handleNotificationChange = (key: string, value: boolean) => {
+    setNotifications((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
+
+  const handleSecurityChange = (key: string, value: boolean | string) => {
+    setSecurity((prev) => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      const updateData = {
+        ...formData,
+        preferences: {
+          notifications,
+          security,
+        },
+      }
+
+      const response = await apiClient.request("/v1/auth/profile/", {
+        method: "PUT",
+        body: JSON.stringify(updateData),
+      })
+
+      if (response.data) {
+        setUser(response.data)
+        setEditMode(false)
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error)
+      // Mock success for demo
+      setTimeout(() => {
+        setUser((prev) => ({ ...prev, ...formData }))
+        setEditMode(false)
+      }, 1000)
+    } finally {
+      setSaving(false)
     }
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen bg-background">
         <Navigation userType="resident" />
-        <div className="pt-16 lg:ml-64 transition-all duration-300">
+        <div className="flex-1 pt-16 lg:ml-64">
           <div className="p-6">
             <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-muted rounded w-1/4"></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="h-64 bg-muted rounded-lg"></div>
-                ))}
+              <div className="h-8 bg-muted rounded w-1/3"></div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="h-96 bg-muted rounded-lg"></div>
+                <div className="lg:col-span-2 h-96 bg-muted rounded-lg"></div>
               </div>
             </div>
           </div>
@@ -201,120 +186,403 @@ export default function RegulationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background">
       <Navigation userType="resident" />
-      <div className="pt-16 lg:ml-64 transition-all duration-300">
-        <div className="p-6 max-w-7xl mx-auto">
+
+      <div className="flex-1 pt-16 lg:ml-64 transition-all duration-300">
+        <div className="p-6 space-y-6">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2">Regulations & Policies</h1>
-            <p className="text-muted-foreground">
-              Stay informed about urban development regulations, policies, and compliance requirements
-            </p>
-          </div>
-
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                placeholder="Search regulations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold flex items-center space-x-3">
+                <User className="w-8 h-8 text-primary" />
+                <span>Profile Settings</span>
+              </h1>
+              <p className="text-muted-foreground">Manage your account information and preferences</p>
             </div>
-            <div className="flex gap-2">
-              {categories.map((category) => (
-                <Button
-                  key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(category)}
-                  className="capitalize"
-                >
-                  {category}
+            <div className="flex items-center space-x-4">
+              {editMode ? (
+                <>
+                  <Button variant="outline" onClick={() => setEditMode(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-primary/90">
+                    {saving ? "Saving..." : "Save Changes"}
+                    <Save className="w-4 h-4 ml-2" />
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={() => setEditMode(true)} className="bg-primary hover:bg-primary/90">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Profile
                 </Button>
-              ))}
+              )}
             </div>
           </div>
 
-          {/* Regulations Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {filteredRegulations.map((regulation) => (
-              <Card key={regulation.id} className="hover-lift">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <CardTitle className="text-xl">{regulation.title}</CardTitle>
-                      <CardDescription>{regulation.description}</CardDescription>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(regulation.status)}
-                      <Badge className={getStatusColor(regulation.status)}>
-                        {regulation.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Tag className="w-4 h-4" />
-                      {regulation.category}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      Effective: {new Date(regulation.effective_date).toLocaleDateString()}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="sections">
-                      <AccordionTrigger>View Sections</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="space-y-4">
-                          {regulation.sections.map((section, index) => (
-                            <div key={index} className="border-l-2 border-primary pl-4">
-                              <h4 className="font-medium mb-2">{section.title}</h4>
-                              <p className="text-sm text-muted-foreground">{section.content}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                    <span className="text-sm text-muted-foreground">
-                      Updated: {new Date(regulation.last_updated).toLocaleDateString()}
-                    </span>
-                    <div className="flex gap-2">
-                      {regulation.document_url && (
-                        <Button size="sm" variant="outline">
-                          <Download className="w-4 h-4 mr-2" />
-                          Download PDF
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Profile Summary */}
+            <Card className="border-0 shadow-lg">
+              <CardHeader className="text-center">
+                <div className="relative mx-auto">
+                  <Avatar className="w-24 h-24 mx-auto">
+                    <AvatarImage src={user?.avatar || "/placeholder.svg"} />
+                    <AvatarFallback className="bg-primary text-white text-2xl">
+                      {user?.first_name?.[0]}
+                      {user?.last_name?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  {editMode && (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0">
+                          <Camera className="w-4 h-4" />
                         </Button>
-                      )}
-                      <Button size="sm" variant="outline">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Full Text
-                      </Button>
-                    </div>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Update Profile Picture</DialogTitle>
+                          <DialogDescription>Upload a new profile picture</DialogDescription>
+                        </DialogHeader>
+                        <div className="text-center py-8">
+                          <Button>Choose File</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                </div>
+                <CardTitle className="mt-4">
+                  {user?.first_name} {user?.last_name}
+                </CardTitle>
+                <CardDescription>{user?.occupation}</CardDescription>
+                <div className="flex justify-center mt-2">
+                  {user?.verification_status === "verified" ? (
+                    <Badge className="bg-green-100 text-green-800 border-green-200">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Verified Resident
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline">
+                      <Shield className="w-3 h-3 mr-1" />
+                      Unverified
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center space-y-2">
+                  <div className="text-sm text-muted-foreground">Member Since</div>
+                  <div className="font-medium">
+                    {new Date(user?.member_since || "2024-01-15").toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                    })}
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
 
-          {filteredRegulations.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No regulations found</h3>
-              <p className="text-muted-foreground">
-                Try adjusting your search terms or category filter
-              </p>
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-primary">{user?.projects_participated || 0}</div>
+                    <div className="text-xs text-muted-foreground">Projects</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-secondary">{user?.feedback_given || 0}</div>
+                    <div className="text-xs text-muted-foreground">Feedback</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Profile Details */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="personal" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="personal">Personal Info</TabsTrigger>
+                  <TabsTrigger value="notifications">Notifications</TabsTrigger>
+                  <TabsTrigger value="security">Security</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="personal" className="space-y-6">
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Personal Information</CardTitle>
+                      <CardDescription>Update your personal details and contact information</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="first_name">First Name</Label>
+                          <Input
+                            id="first_name"
+                            name="first_name"
+                            value={formData.first_name}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="last_name">Last Name</Label>
+                          <Input
+                            id="last_name"
+                            name="last_name"
+                            value={formData.last_name}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="email"
+                            name="email"
+                            type="email"
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone Number</Label>
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="phone"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Address</Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Textarea
+                            id="address"
+                            name="address"
+                            value={formData.address}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                            className="pl-10"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="date_of_birth">Date of Birth</Label>
+                          <div className="relative">
+                            <Calendar className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="date_of_birth"
+                              name="date_of_birth"
+                              type="date"
+                              value={formData.date_of_birth}
+                              onChange={handleInputChange}
+                              disabled={!editMode}
+                              className="pl-10"
+                            />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="occupation">Occupation</Label>
+                          <Input
+                            id="occupation"
+                            name="occupation"
+                            value={formData.occupation}
+                            onChange={handleInputChange}
+                            disabled={!editMode}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="bio">Bio</Label>
+                        <Textarea
+                          id="bio"
+                          name="bio"
+                          placeholder="Tell us about yourself..."
+                          value={formData.bio}
+                          onChange={handleInputChange}
+                          disabled={!editMode}
+                          rows={3}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="notifications" className="space-y-6">
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Notification Preferences</CardTitle>
+                      <CardDescription>Choose how you want to receive updates and alerts</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Email Notifications</Label>
+                            <div className="text-sm text-muted-foreground">Receive notifications via email</div>
+                          </div>
+                          <Switch
+                            checked={notifications.email_notifications}
+                            onCheckedChange={(checked) => handleNotificationChange("email_notifications", checked)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>SMS Notifications</Label>
+                            <div className="text-sm text-muted-foreground">Receive notifications via SMS</div>
+                          </div>
+                          <Switch
+                            checked={notifications.sms_notifications}
+                            onCheckedChange={(checked) => handleNotificationChange("sms_notifications", checked)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Push Notifications</Label>
+                            <div className="text-sm text-muted-foreground">Receive push notifications in browser</div>
+                          </div>
+                          <Switch
+                            checked={notifications.push_notifications}
+                            onCheckedChange={(checked) => handleNotificationChange("push_notifications", checked)}
+                          />
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-4">Content Preferences</h4>
+
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label>Project Updates</Label>
+                                <div className="text-sm text-muted-foreground">
+                                  Updates on projects you're following
+                                </div>
+                              </div>
+                              <Switch
+                                checked={notifications.project_updates}
+                                onCheckedChange={(checked) => handleNotificationChange("project_updates", checked)}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label>Feedback Alerts</Label>
+                                <div className="text-sm text-muted-foreground">
+                                  When your feedback receives responses
+                                </div>
+                              </div>
+                              <Switch
+                                checked={notifications.feedback_alerts}
+                                onCheckedChange={(checked) => handleNotificationChange("feedback_alerts", checked)}
+                              />
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <Label>Marketing Emails</Label>
+                                <div className="text-sm text-muted-foreground">Promotional content and newsletters</div>
+                              </div>
+                              <Switch
+                                checked={notifications.marketing_emails}
+                                onCheckedChange={(checked) => handleNotificationChange("marketing_emails", checked)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="security" className="space-y-6">
+                  <Card className="border-0 shadow-lg">
+                    <CardHeader>
+                      <CardTitle>Security Settings</CardTitle>
+                      <CardDescription>Manage your account security and privacy</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Two-Factor Authentication</Label>
+                            <div className="text-sm text-muted-foreground">
+                              Add an extra layer of security to your account
+                            </div>
+                          </div>
+                          <Switch
+                            checked={security.two_factor_enabled}
+                            onCheckedChange={(checked) => handleSecurityChange("two_factor_enabled", checked)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-0.5">
+                            <Label>Login Alerts</Label>
+                            <div className="text-sm text-muted-foreground">Get notified of new login attempts</div>
+                          </div>
+                          <Switch
+                            checked={security.login_alerts}
+                            onCheckedChange={(checked) => handleSecurityChange("login_alerts", checked)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="session_timeout">Session Timeout (minutes)</Label>
+                          <Input
+                            id="session_timeout"
+                            type="number"
+                            value={security.session_timeout}
+                            onChange={(e) => handleSecurityChange("session_timeout", e.target.value)}
+                            className="w-32"
+                          />
+                          <div className="text-sm text-muted-foreground">
+                            Automatically log out after this period of inactivity
+                          </div>
+                        </div>
+
+                        <div className="border-t pt-4">
+                          <h4 className="font-medium mb-4">Password & Authentication</h4>
+
+                          <div className="space-y-4">
+                            <Button variant="outline" className="w-full justify-start bg-transparent">
+                              <Lock className="w-4 h-4 mr-2" />
+                              Change Password
+                            </Button>
+
+                            <Button variant="outline" className="w-full justify-start bg-transparent">
+                              <Shield className="w-4 h-4 mr-2" />
+                              Download Account Data
+                            </Button>
+
+                            <Button variant="destructive" className="w-full justify-start">
+                              Delete Account
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>

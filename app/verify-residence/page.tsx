@@ -1,89 +1,158 @@
-'use client'
+"use client"
 
-import { useState } from 'react'
-import { Navigation } from '@/components/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Upload, FileText, CheckCircle, Clock, AlertCircle, Home, MapPin, Phone, Mail } from 'lucide-react'
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { Navigation } from "@/components/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Progress } from "@/components/ui/progress"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Upload, FileText, CheckCircle, Clock, AlertCircle, Home, MapPin, Phone, Mail, Loader2 } from "lucide-react"
+import { apiClient } from "@/lib/api"
 
 export default function VerifyResidencePage() {
   const [formData, setFormData] = useState({
-    fullName: '',
-    address: '',
-    phone: '',
-    email: '',
-    residencyDuration: '',
-    additionalInfo: ''
+    fullName: "",
+    address: "",
+    phone: "",
+    email: "",
+    residencyDuration: "",
+    additionalInfo: "",
   })
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([])
-  const [verificationStatus, setVerificationStatus] = useState<'pending' | 'under_review' | 'approved' | 'rejected'>('pending')
+  const [verificationStatus, setVerificationStatus] = useState<"pending" | "under_review" | "approved" | "rejected">(
+    "pending",
+  )
   const [loading, setLoading] = useState(false)
+  const [profileLoading, setProfileLoading] = useState(true)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+
+  useEffect(() => {
+    fetchUserProfile()
+  }, [])
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await apiClient.getProfile()
+      if (response.data) {
+        const user = response.data
+        setFormData((prev) => ({
+          ...prev,
+          fullName: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
+          email: user.email || "",
+          phone: user.phone || "",
+          address: user.address || "",
+        }))
+
+        // Check if user already has verification status
+        if (user.verification_status) {
+          setVerificationStatus(user.verification_status)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      // Fallback to mock data
+      setFormData((prev) => ({
+        ...prev,
+        fullName: "John Doe",
+        email: "john.doe@email.com",
+        phone: "+254 700 123 456",
+        address: "Kilimani, Nairobi",
+      }))
+    } finally {
+      setProfileLoading(false)
+    }
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }))
   }
 
   const handleFileUpload = (type: string) => {
     // Mock file upload
-    setUploadedFiles(prev => [...prev, type])
+    setUploadedFiles((prev) => [...prev, type])
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-    
-    // Mock submission
-    setTimeout(() => {
-      setVerificationStatus('under_review')
+
+    try {
+      // Try to submit to API
+      const verificationData = {
+        ...formData,
+        documents: uploadedFiles,
+        submission_date: new Date().toISOString(),
+      }
+
+      const response = await apiClient.request("/v1/auth/verify-residence/", {
+        method: "POST",
+        body: JSON.stringify(verificationData),
+      })
+
+      if (response.data) {
+        setVerificationStatus("under_review")
+        setShowSuccessDialog(true)
+      } else {
+        throw new Error("API submission failed")
+      }
+    } catch (error) {
+      console.error("Error submitting verification:", error)
+      // Fallback to mock submission
+      setTimeout(() => {
+        setVerificationStatus("under_review")
+        setShowSuccessDialog(true)
+      }, 1000)
+    } finally {
       setLoading(false)
-    }, 2000)
+    }
   }
 
   const getStatusInfo = (status: string) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return {
           icon: Clock,
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          title: 'Verification Pending',
-          description: 'Please complete the form and upload required documents'
+          color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+          title: "Verification Pending",
+          description: "Please complete the form and upload required documents",
         }
-      case 'under_review':
+      case "under_review":
         return {
           icon: AlertCircle,
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
-          title: 'Under Review',
-          description: 'Your documents are being reviewed by our team'
+          color: "bg-blue-100 text-blue-800 border-blue-200",
+          title: "Under Review",
+          description: "Your documents are being reviewed by our team",
         }
-      case 'approved':
+      case "approved":
         return {
           icon: CheckCircle,
-          color: 'bg-green-100 text-green-800 border-green-200',
-          title: 'Verified Resident',
-          description: 'Your Kilimani residency has been verified'
+          color: "bg-green-100 text-green-800 border-green-200",
+          title: "Verified Resident",
+          description: "Your Kilimani residency has been verified",
         }
-      case 'rejected':
+      case "rejected":
         return {
           icon: AlertCircle,
-          color: 'bg-red-100 text-red-800 border-red-200',
-          title: 'Verification Failed',
-          description: 'Please review and resubmit your documents'
+          color: "bg-red-100 text-red-800 border-red-200",
+          title: "Verification Failed",
+          description: "Please review and resubmit your documents",
         }
       default:
         return {
           icon: Clock,
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
-          title: 'Unknown Status',
-          description: ''
+          color: "bg-gray-100 text-gray-800 border-gray-200",
+          title: "Unknown Status",
+          description: "",
         }
     }
   }
@@ -92,21 +161,40 @@ export default function VerifyResidencePage() {
   const StatusIcon = statusInfo.icon
 
   const requiredDocuments = [
-    { type: 'water_bill', name: 'Water Bill', description: 'Recent water bill showing your Kilimani address' },
-    { type: 'electricity_bill', name: 'Electricity Bill', description: 'Recent electricity bill from Kenya Power' },
-    { type: 'lease_agreement', name: 'Lease Agreement', description: 'Valid lease agreement or ownership documents' }
+    { type: "water_bill", name: "Water Bill", description: "Recent water bill showing your Kilimani address" },
+    { type: "electricity_bill", name: "Electricity Bill", description: "Recent electricity bill from Kenya Power" },
+    { type: "lease_agreement", name: "Lease Agreement", description: "Valid lease agreement or ownership documents" },
   ]
 
   const completionPercentage = Math.round(
-    ((Object.values(formData).filter(v => v.trim() !== '').length / Object.keys(formData).length) * 50) +
-    ((uploadedFiles.length / requiredDocuments.length) * 50)
+    (Object.values(formData).filter((v) => v.trim() !== "").length / Object.keys(formData).length) * 50 +
+      (uploadedFiles.length / requiredDocuments.length) * 50,
   )
+
+  if (profileLoading) {
+    return (
+      <div className="flex min-h-screen bg-background">
+        <Navigation userType="resident" />
+        <div className="flex-1 pt-16 lg:ml-64">
+          <div className="p-6">
+            <div className="animate-pulse space-y-6">
+              <div className="h-8 bg-muted rounded w-1/3"></div>
+              <div className="grid lg:grid-cols-2 gap-6">
+                <div className="h-96 bg-muted rounded-lg"></div>
+                <div className="h-96 bg-muted rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
       <Navigation userType="resident" />
-      
-      <div className="flex-1 lg:ml-64">
+
+      <div className="flex-1 pt-16 lg:ml-64 transition-all duration-300">
         <div className="p-6 space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -115,9 +203,7 @@ export default function VerifyResidencePage() {
                 <Home className="w-8 h-8 text-primary" />
                 <span>Verify Residence</span>
               </h1>
-              <p className="text-muted-foreground">
-                Verify your Kilimani residency to access all platform features
-              </p>
+              <p className="text-muted-foreground">Verify your Kilimani residency to access all platform features</p>
             </div>
             <Badge className={statusInfo.color}>
               <StatusIcon className="w-4 h-4 mr-2" />
@@ -150,9 +236,7 @@ export default function VerifyResidencePage() {
                   <MapPin className="w-5 h-5 text-primary" />
                   <span>Personal Information</span>
                 </CardTitle>
-                <CardDescription>
-                  Provide your personal details for verification
-                </CardDescription>
+                <CardDescription>Provide your personal details for verification</CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -248,9 +332,7 @@ export default function VerifyResidencePage() {
                   <FileText className="w-5 h-5 text-secondary" />
                   <span>Required Documents</span>
                 </CardTitle>
-                <CardDescription>
-                  Upload proof of your Kilimani residency
-                </CardDescription>
+                <CardDescription>Upload proof of your Kilimani residency</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {requiredDocuments.map((doc) => (
@@ -267,21 +349,16 @@ export default function VerifyResidencePage() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mb-3">{doc.description}</p>
-                    
+
                     {!uploadedFiles.includes(doc.type) ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleFileUpload(doc.type)}
-                        className="w-full"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => handleFileUpload(doc.type)} className="w-full">
                         <Upload className="w-4 h-4 mr-2" />
                         Upload {doc.name}
                       </Button>
                     ) : (
                       <div className="flex items-center space-x-2 text-sm text-green-600">
                         <CheckCircle className="w-4 h-4" />
-                        <span>{doc.name.toLowerCase().replace(' ', '_')}.pdf</span>
+                        <span>{doc.name.toLowerCase().replace(" ", "_")}.pdf</span>
                       </div>
                     )}
                   </div>
@@ -312,20 +389,25 @@ export default function VerifyResidencePage() {
                   disabled={loading || completionPercentage < 100}
                   className="bg-primary hover:bg-primary/90"
                 >
-                  {loading ? 'Submitting...' : 'Submit for Verification'}
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit for Verification"
+                  )}
                 </Button>
               </div>
             </CardContent>
           </Card>
 
           {/* Verification Timeline */}
-          {verificationStatus !== 'pending' && (
+          {verificationStatus !== "pending" && (
             <Card className="border-0 shadow-lg">
               <CardHeader>
                 <CardTitle>Verification Timeline</CardTitle>
-                <CardDescription>
-                  Track the progress of your residency verification
-                </CardDescription>
+                <CardDescription>Track the progress of your residency verification</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -340,39 +422,47 @@ export default function VerifyResidencePage() {
                   </div>
 
                   <div className="flex items-center space-x-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      verificationStatus === 'under_review' || verificationStatus === 'approved' 
-                        ? 'bg-blue-100' : 'bg-gray-100'
-                    }`}>
-                      <Clock className={`w-4 h-4 ${
-                        verificationStatus === 'under_review' || verificationStatus === 'approved'
-                          ? 'text-blue-600' : 'text-gray-400'
-                      }`} />
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        verificationStatus === "under_review" || verificationStatus === "approved"
+                          ? "bg-blue-100"
+                          : "bg-gray-100"
+                      }`}
+                    >
+                      <Clock
+                        className={`w-4 h-4 ${
+                          verificationStatus === "under_review" || verificationStatus === "approved"
+                            ? "text-blue-600"
+                            : "text-gray-400"
+                        }`}
+                      />
                     </div>
                     <div>
                       <div className="font-medium">Document Review</div>
                       <div className="text-sm text-muted-foreground">
-                        {verificationStatus === 'under_review' 
-                          ? 'Currently reviewing your documents' 
-                          : 'Pending document review'}
+                        {verificationStatus === "under_review"
+                          ? "Currently reviewing your documents"
+                          : "Pending document review"}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      verificationStatus === 'approved' ? 'bg-green-100' : 'bg-gray-100'
-                    }`}>
-                      <CheckCircle className={`w-4 h-4 ${
-                        verificationStatus === 'approved' ? 'text-green-600' : 'text-gray-400'
-                      }`} />
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        verificationStatus === "approved" ? "bg-green-100" : "bg-gray-100"
+                      }`}
+                    >
+                      <CheckCircle
+                        className={`w-4 h-4 ${verificationStatus === "approved" ? "text-green-600" : "text-gray-400"}`}
+                      />
                     </div>
                     <div>
                       <div className="font-medium">Verification Complete</div>
                       <div className="text-sm text-muted-foreground">
-                        {verificationStatus === 'approved' 
-                          ? 'Your residency has been verified' 
-                          : 'Awaiting final verification'}
+                        {verificationStatus === "approved"
+                          ? "Your residency has been verified"
+                          : "Awaiting final verification"}
                       </div>
                     </div>
                   </div>
@@ -382,6 +472,27 @@ export default function VerifyResidencePage() {
           )}
         </div>
       </div>
+
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-green-100">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center">Application Submitted Successfully!</DialogTitle>
+            <DialogDescription className="text-center">
+              Your residency verification application has been submitted. You will be verified shortly by our team.
+              We'll notify you via email once the review is complete.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center mt-6">
+            <Button onClick={() => setShowSuccessDialog(false)} className="bg-primary hover:bg-primary/90">
+              Got it, thanks!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

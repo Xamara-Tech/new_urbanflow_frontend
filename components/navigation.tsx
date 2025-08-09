@@ -59,10 +59,12 @@ export function Navigation({ userType }: NavigationProps) {
 
   const investorNavItems = [
     { href: '/investor-dashboard', label: 'Dashboard', icon: Home },
-    { href: '/my-projects', label: 'My Projects', icon: Building2 },
-    { href: '/create-project', label: 'Create Project', icon: Plus },
-    { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/investor/my-projects', label: 'My Projects', icon: Building2 },
+    { href: '/investor/create-project', label: 'Create Project', icon: Plus },
+    { href: '/investor/analytics', label: 'Analytics', icon: BarChart3 },
+    { href: '/investor/market-analysis', label: 'Market Analysis', icon: MessageSquare },
     { href: '/compliance', label: 'Compliance', icon: Shield },
+    { href: '/investor/opportunities', label: 'Opportunities', icon: DollarSign },
   ]
 
   const sharedNavItems = [
