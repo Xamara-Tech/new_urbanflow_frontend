@@ -95,7 +95,7 @@ export function Navigation({ userType }: NavigationProps) {
             <Icon className="w-5 h-5 flex-shrink-0" />
             {(mobile || !isCollapsed) && <span>{item.label}</span>}
             {!mobile && isCollapsed && (
-              <div className="absolute left-16 bg-popover text-popover-foreground px-2 py-1 rounded-md text-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+              <div className="absolute left-16 bg-card text-card-foreground px-2 py-1 rounded-md text-sm opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg border">
                 {item.label}
               </div>
             )}

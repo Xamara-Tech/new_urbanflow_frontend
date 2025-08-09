@@ -355,7 +355,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t mt-12 pt-8 text-center text-muted-foreground animate-slide-up stagger-4">
-            <p>&copy; 2024 URBANFLOW. All rights reserved. Building Kilimani's future together.</p>
+            <p>&copy; 2025 URBANFLOW. All rights reserved. Building Kilimani's future together.</p>
           </div>
         </div>
       </footer>

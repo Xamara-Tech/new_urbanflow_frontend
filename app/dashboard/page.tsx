@@ -95,7 +95,7 @@ export default function ResidentDashboard() {
                 Stay updated on Kilimani development projects and earn rewards for your feedback
               </p>
             </div>
-            <Button className="bg-primary hover:bg-primary/90" asChild>
+            <Button className="bg-primary hover:bg-primary/90 text-white" asChild>
               <Link href="/projects">
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Give Feedback
